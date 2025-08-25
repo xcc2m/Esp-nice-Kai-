@@ -1,0 +1,182 @@
+-- ESP + View Player + GUI (Mobile Friendly)
+-- Put this LocalScript in StarterPlayer > StarterPlayerScripts
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local Camera = workspace.CurrentCamera
+
+local espEnabled = true
+local textSize = 18
+local textColor = Color3.new(1,1,1)
+local viewing = nil
+local billboards = {}
+
+-- =====================
+-- ESP System
+-- =====================
+local function createESP(plr)
+    if plr == LocalPlayer then return end
+    local function setup(char)
+        task.wait(1)
+        local head = char:FindFirstChild("Head") or char:WaitForChild("Head",5)
+        if not head then return end
+
+        if billboards[plr] then billboards[plr].gui:Destroy() end
+
+        local bb = Instance.new("BillboardGui", head)
+        bb.Size = UDim2.new(0,200,0,40)
+        bb.AlwaysOnTop = true
+        bb.StudsOffset = Vector3.new(0,2.5,0)
+        local lbl = Instance.new("TextLabel", bb)
+        lbl.Size = UDim2.new(1,0,1,0)
+        lbl.BackgroundTransparency = 1
+        lbl.TextColor3 = textColor
+        lbl.Font = Enum.Font.SourceSansBold
+        lbl.TextSize = textSize
+        lbl.Text = plr.Name
+        billboards[plr] = {gui=bb, label=lbl, head=head}
+    end
+
+    plr.CharacterAdded:Connect(setup)
+    if plr.Character then setup(plr.Character) end
+end
+
+for _,p in ipairs(Players:GetPlayers()) do createESP(p) end
+Players.PlayerAdded:Connect(createESP)
+Players.PlayerRemoving:Connect(function(plr)
+    if billboards[plr] then billboards[plr].gui:Destroy() billboards[plr]=nil end
+end)
+
+-- Update loop
+RunService.RenderStepped:Connect(function()
+    local myRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    for plr,data in pairs(billboards) do
+        if espEnabled and myRoot then
+            local dist = math.floor((myRoot.Position - data.head.Position).Magnitude)
+            data.label.Text = plr.Name.." | "..dist.." studs"
+            data.label.TextSize = textSize
+            data.label.TextColor3 = textColor
+            data.gui.Enabled = true
+        else
+            data.gui.Enabled = false
+        end
+    end
+
+    -- Camera spectate
+    if viewing and viewing.Character and viewing.Character:FindFirstChild("Humanoid") then
+        Camera.CameraSubject = viewing.Character.Humanoid
+    elseif not viewing and LocalPlayer.Character then
+        Camera.CameraSubject = LocalPlayer.Character:FindFirstChild("Humanoid")
+    end
+end)
+
+-- =====================
+-- GUI Panel
+-- =====================
+local gui = Instance.new("ScreenGui", PlayerGui)
+gui.Name = "ESP_Control"
+
+-- Open/Close button
+local openBtn = Instance.new("TextButton", gui)
+openBtn.Size = UDim2.new(0,80,0,30)
+openBtn.Position = UDim2.new(0,10,0.5,-15)
+openBtn.Text = "Open"
+openBtn.BackgroundColor3 = Color3.fromRGB(50,50,50)
+
+local panel = Instance.new("Frame", gui)
+panel.Size = UDim2.new(0,200,0,280)
+panel.Position = UDim2.new(0.1,0,0.3,0)
+panel.BackgroundColor3 = Color3.fromRGB(40,40,40)
+panel.Visible = false
+panel.Active = true
+panel.Draggable = true
+
+openBtn.MouseButton1Click:Connect(function()
+    panel.Visible = not panel.Visible
+end)
+
+-- Toggle ESP
+local toggleBtn = Instance.new("TextButton", panel)
+toggleBtn.Size = UDim2.new(0,180,0,28)
+toggleBtn.Position = UDim2.new(0,10,0,8)
+toggleBtn.Text = "Toggle ESP"
+toggleBtn.MouseButton1Click:Connect(function() espEnabled = not espEnabled end)
+
+-- Size controls
+local plus = Instance.new("TextButton", panel)
+plus.Size = UDim2.new(0,36,0,28)
+plus.Position = UDim2.new(0,10,0,45)
+plus.Text = "+"
+plus.MouseButton1Click:Connect(function() textSize += 2 end)
+
+local minus = Instance.new("TextButton", panel)
+minus.Size = UDim2.new(0,36,0,28)
+minus.Position = UDim2.new(0,60,0,45)
+minus.Text = "-"
+minus.MouseButton1Click:Connect(function() textSize = math.max(10,textSize-2) end)
+
+-- Color circles
+local colors = {
+    Color3.new(1,0,0), Color3.new(0,1,0), Color3.new(0,0,1),
+    Color3.new(1,1,0), Color3.new(1,0,1), Color3.new(0,1,1),
+    Color3.new(1,1,1)
+}
+for i,c in ipairs(colors) do
+    local btn = Instance.new("TextButton", panel)
+    btn.Size = UDim2.new(0,22,0,22)
+    btn.Position = UDim2.new(0,10+26*(i-1),0,85)
+    btn.BackgroundColor3 = c
+    btn.Text = ""
+    btn.MouseButton1Click:Connect(function() textColor = c end)
+end
+
+-- View Player list
+local viewBtn = Instance.new("TextButton", panel)
+viewBtn.Size = UDim2.new(0,180,0,28)
+viewBtn.Position = UDim2.new(0,10,0,120)
+viewBtn.Text = "View Player"
+
+local scroll = Instance.new("ScrollingFrame", panel)
+scroll.Size = UDim2.new(0,180,0,100)
+scroll.Position = UDim2.new(0,10,0,155)
+scroll.Visible = false
+scroll.CanvasSize = UDim2.new()
+scroll.ScrollBarThickness = 6
+local layout = Instance.new("UIListLayout", scroll)
+
+local function refreshList()
+    for _,c in ipairs(scroll:GetChildren()) do
+        if c:IsA("TextButton") then c:Destroy() end
+    end
+    for _,plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer then
+            local b = Instance.new("TextButton", scroll)
+            b.Size = UDim2.new(1,0,0,24)
+            b.Text = plr.Name
+            b.MouseButton1Click:Connect(function()
+                viewing = plr
+                scroll.Visible = false
+            end)
+        end
+    end
+    scroll.CanvasSize = UDim2.new(0,0,0,#Players:GetPlayers()*26)
+end
+
+viewBtn.MouseButton1Click:Connect(function()
+    scroll.Visible = not scroll.Visible
+    refreshList()
+end)
+Players.PlayerAdded:Connect(refreshList)
+Players.PlayerRemoving:Connect(refreshList)
+
+-- Stop viewing
+local stop = Instance.new("TextButton", panel)
+stop.Size = UDim2.new(0,180,0,28)
+stop.Position = UDim2.new(0,10,0,260)
+stop.Text = "Stop Viewing"
+stop.MouseButton1Click:Connect(function() viewing = nil end)
+
+
+---
