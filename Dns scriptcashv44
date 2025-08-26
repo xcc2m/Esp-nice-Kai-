@@ -1,0 +1,62 @@
+-- LocalScript inside StarterGui
+
+-- Create ScreenGui
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "LoadingScreen"
+screenGui.IgnoreGuiInset = true
+screenGui.ResetOnSpawn = false
+screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+-- Background frame
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(1, 0, 1, 0)
+frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0) -- black
+frame.Parent = screenGui
+
+-- Title text
+local textLabel = Instance.new("TextLabel")
+textLabel.Text = "cashdns spawner"
+textLabel.Size = UDim2.new(1, 0, 0.2, 0)
+textLabel.Position = UDim2.new(0, 0, 0.35, 0)
+textLabel.TextColor3 = Color3.fromRGB(0, 255, 0) -- neon green
+textLabel.TextScaled = true
+textLabel.BackgroundTransparency = 1
+textLabel.Parent = frame
+
+-- Progress bar background
+local barBG = Instance.new("Frame")
+barBG.Size = UDim2.new(0.6, 0, 0.05, 0)
+barBG.Position = UDim2.new(0.2, 0, 0.55, 0)
+barBG.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+barBG.BorderSizePixel = 0
+barBG.Parent = frame
+
+-- Progress bar fill
+local barFill = Instance.new("Frame")
+barFill.Size = UDim2.new(0, 0, 1, 0)
+barFill.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+barFill.BorderSizePixel = 0
+barFill.Parent = barBG
+
+-- Loading effect
+for i = 1, 100 do
+textLabel.Text = "cashdns spawner - Loading " .. i .. "%"
+barFill.Size = UDim2.new(i/100, 0, 1, 0)
+task.wait(0.03) -- speed of loading
+end
+
+-- Fade out effect
+for transparency = 0, 1, 0.05 do
+frame.BackgroundTransparency = transparency
+textLabel.TextTransparency = transparency
+barBG.BackgroundTransparency = transparency
+barFill.BackgroundTransparency = transparency
+task.wait(0.05)
+end
+
+-- Remove loading screen
+screenGui:Destroy()
+
+-- ✅ Your game code starts here
+print("loadstring(game:HttpGet("https://raw.githubusercontent.com/Babyhamsta/RBLX_Scripts/main/Universal/Bypasses.lua", true))()")
+
